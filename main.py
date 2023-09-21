@@ -1,8 +1,11 @@
+import random
 import shutil
 import time
 
 from config import MAX_FPS
 from screen import Screen
+
+all_fps = []
 
 while True:
     (width, height) = shutil.get_terminal_size()
@@ -17,7 +20,7 @@ while True:
     screen.fill(
         -0.1, -0.1,
         0.1, 0.1,
-        0.7
+        random.randrange(30, 80) / 100
     )
     # screen.set_pixel(0, 0, 0.4)
     # screen.set_pixel(-1, -1, 0.4)
@@ -28,9 +31,21 @@ while True:
     # screen.set_pixel(0, 1, 0.4)
     # screen.set_pixel(1, 0, 0.4)
     # screen.set_pixel(-1, 0, 0.4)
-    screen.render()
+    render = screen.render()
 
     renderDuration = time.time() - startRenderTime
-    time_ = (1 / MAX_FPS) - renderDuration
-    if time_ > 0:
-        time.sleep(time_)
+    if MAX_FPS > 0:
+        time_ = (1 / MAX_FPS) - renderDuration
+        if time_ > 0:
+            time.sleep(time_)
+
+    fps = round(1 / (time.time() - startRenderTime))
+    all_fps.append(fps)
+    if len(all_fps) > 50:
+        all_fps.pop(0)
+
+    average_fps = str(round(sum(all_fps) / len(all_fps)))
+
+    render = '\n' + average_fps + ' ' + render[len(average_fps) + 1:]
+
+    print(render, end='')

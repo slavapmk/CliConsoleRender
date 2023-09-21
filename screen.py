@@ -31,10 +31,10 @@ class Screen:
                 if 0 < screen_x < self.width and 0 < screen_y < self.height:
                     self.matrix[screen_x][screen_y] = value
 
-    def render(self):
+    def render(self)->str:
         canvas = '\n'
         for y in range(self.height):
             for x in range(self.width):
                 canvas += self.parse_pixel(self.matrix[x][y])
             canvas += '\n'
-        print(canvas, end='')
+        return canvas
