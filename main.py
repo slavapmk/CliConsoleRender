@@ -22,15 +22,14 @@ while True:
         0.1, 0.1,
         random.randrange(30, 80) / 100
     )
-    screen.set_pixel(0, 0, 0.4)
-    screen.set_pixel(-1, -1, 0.4)
-    screen.set_pixel(1, 1, 0.4)
-    screen.set_pixel(-1, 1, 0.4)
-    screen.set_pixel(1, -1, 0.4)
-    screen.set_pixel(0, -1, 0.4)
-    screen.set_pixel(0, 1, 0.4)
-    screen.set_pixel(1, 0, 0.4)
-    screen.set_pixel(-1, 0, 0.4)
+    screen.set_pixel(-0.3, -0.3, 0.4)
+    screen.set_pixel(0.3, 0.3, 0.4)
+    screen.set_pixel(-0.3, 0.3, 0.4)
+    screen.set_pixel(0.3, -0.3, 0.4)
+    screen.set_pixel(0, -0.3, 0.4)
+    screen.set_pixel(0, 0.3, 0.4)
+    screen.set_pixel(0.3, 0, 0.4)
+    screen.set_pixel(-0.3, 0, 0.4)
     render = screen.render()
 
     renderDuration = time.time() - startRenderTime
