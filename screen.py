@@ -19,7 +19,10 @@ class Screen:
         return self.gradient[round((len(self.gradient) - 1) * (1 - pixel))]
 
     def set_pixel(self, x: float, y: float, value: float):
-        self.matrix[round((x + 1) / 2 * (self.width - 1))][round((y * HEIGHT_RATIO + 1) / 2 * (self.height - 1))] = value
+        x = round((x + 1) / 2 * (self.width - 1))
+        y = round((y * HEIGHT_RATIO + 1) / 2 * (self.height - 1))
+        if 0 < x < self.width and 0 < y < self.height:
+            self.matrix[x][y] = value
 
     def fill(self, x_start: float, y_start: float, x_stop: float, y_stop: float, value: float):
         start_screen_x = round((x_start + 1) / 2 * (self.width - 1))
@@ -31,7 +34,7 @@ class Screen:
                 if 0 < screen_x < self.width and 0 < screen_y < self.height:
                     self.matrix[screen_x][screen_y] = value
 
-    def render(self)->str:
+    def render(self) -> str:
         canvas = '\n'
         for y in range(self.height):
             for x in range(self.width):
