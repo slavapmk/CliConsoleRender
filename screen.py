@@ -13,31 +13,39 @@ class Screen:
         self.width = width
         self.height = height
 
-    gradient: str = 'ÆÑÊŒØMÉËÈÃÂWQBÅæ#NÁþEÄÀHKRŽœXgÐêqÛŠÕÔA€ßpmãâG¶øðé8ÚÜ$ëdÙýèÓÞÖåÿÒb¥FDñáZPäšÇàhû§ÝkŸ®S9žUTe6µOyxÎ¾f4õ5ôú&aü™2ùçw©Y£0VÍL±3ÏÌóC@nöòs¢u‰½¼‡zJƒ%¤Itocîrjv1lí=ïì<>i7†[¿?×}*{+()\/»«•¬|!¡÷¦¯—^ª„”“~³º²–°¹‹›;:’‘‚’˜ˆ¸…·¨´` '
+    # gradient: str = 'ÆÑÊŒØMÉËÈÃÂWQBÅæ#NÁþEÄÀHKRŽœXgÐêqÛŠÕÔA€ßpmãâG¶øðé8ÚÜ$ëdÙýèÓÞÖåÿÒb¥FDñáZPäšÇàhû§ÝkŸ®S9žUTe6µOyxÎ¾f4õ5ôú&aü™2ùçw©Y£0VÍL±3ÏÌóC@nöòs¢u‰½¼‡zJƒ%¤Itocîrjv1lí=ïì<>i7†[¿?×}*{+()\/»«•¬|!¡÷¦¯—^ª„”“~³º²–°¹‹›;:’‘‚’˜ˆ¸…·¨´` '
+    gradient: str = '&$Xx=+;:. '
 
     def parse_pixel(self, pixel: float):
         return self.gradient[round((len(self.gradient) - 1) * (1 - pixel))]
 
     def set_pixel(self, x: float, y: float, value: float):
-        x = round((x + 1) / 2 * (self.width - 1))
-        y = round((y * HEIGHT_RATIO + 1) / 2 * (self.height - 1))
+        x = self.parse_x_screen_pixel(x)
+        y = self.parse_y_screen_pixel(y)
         if 0 < x < self.width and 0 < y < self.height:
             self.matrix[x][y] = value
 
     def fill(self, x_start: float, y_start: float, x_stop: float, y_stop: float, value: float):
-        start_screen_x = round((x_start + 1) / 2 * (self.width - 1))
-        start_screen_y = round((y_start * HEIGHT_RATIO + 1) / 2 * (self.height - 1))
-        stop_screen_x = round((x_stop + 1) / 2 * (self.width - 1))
-        stop_screen_y = round((y_stop * HEIGHT_RATIO + 1) / 2 * (self.height - 1))
+        start_screen_x = self.parse_x_screen_pixel(x_start)
+        start_screen_y = self.parse_y_screen_pixel(y_start)
+        stop_screen_x = self.parse_x_screen_pixel(x_stop)
+        stop_screen_y = self.parse_y_screen_pixel(y_stop)
         for screen_x in range(min(start_screen_x, stop_screen_x), max(start_screen_x, stop_screen_x) + 1):
             for screen_y in range(min(start_screen_y, stop_screen_y), max(start_screen_y, stop_screen_y) + 1):
-                if 0 < screen_x < self.width and 0 < screen_y < self.height:
+                if 0 <= screen_x < self.width and 0 <= screen_y < self.height:
                     self.matrix[screen_x][screen_y] = value
 
+    def parse_x_screen_pixel(self, relative_x) -> int:
+        return round((relative_x + 1) / 2 * self.width)
+
+    def parse_y_screen_pixel(self, relative_y) -> int:
+        return round((1 - ((relative_y * HEIGHT_RATIO + 1) / 2)) * self.height)
+
     def render(self) -> str:
-        canvas = '\n'
+        canvas = []
         for y in range(self.height):
+            row = ''
             for x in range(self.width):
-                canvas += self.parse_pixel(self.matrix[x][y])
-            canvas += '\n'
-        return canvas
+                row += self.parse_pixel(self.matrix[x][y])
+            canvas.append(row)
+        return '\n'.join(canvas)
