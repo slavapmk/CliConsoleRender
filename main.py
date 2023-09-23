@@ -8,10 +8,11 @@ from screen import Screen
 
 all_fps = []
 while True:
+    startRenderTime = time.time()
+
     (width, height) = shutil.get_terminal_size()
     screen = Screen(width - 1, height)
 
-    startRenderTime = time.time()
     screen.fill(
         -1, -1,
         1, 1,
@@ -46,11 +47,13 @@ while True:
             time.sleep(delayTime)
 
     if config.SHOW_FPS:
-        fps = round(1 / (time.time() - startRenderTime))
-        all_fps.append(fps)
-        if len(all_fps) > 30:
-            all_fps.pop(0)
-        average_fps = f' FPS: {round(sum(all_fps) / len(all_fps))} '
-        render = average_fps + render[len(average_fps):]
+        elapsed_time = (time.time() - startRenderTime)
+        if elapsed_time != 0:
+            fps = round(1 / elapsed_time)
+            all_fps.append(fps)
+            if len(all_fps) > 30:
+                all_fps.pop(0)
+            average_fps = f' FPS: {round(sum(all_fps) / len(all_fps))} '
+            render = average_fps + render[len(average_fps):]
 
     print('\n' + render, end='')
