@@ -32,10 +32,16 @@ def parse_pixel(pixel: float):
     return gradient[round((len(gradient) - 1) * (1 - pixel))]
 
 
+def process_scene(ticks: float, scene: Scene):
+    scene.objects[0].rotate(Rotation3d(
+        ticks, ticks, ticks
+    ))
+
+
 last_fps_values = []
 
 d = Cube3d(Point3d(0, 3, 0), 1)
-scene = Scene(
+game_scene = Scene(
     Camera(
         Point3d(0, 0, 0),
         Rotation3d(0, 0, 0)
@@ -45,14 +51,19 @@ scene = Scene(
 
 width, height = shutil.get_terminal_size()
 width -= 1
+
+last_render_time = time.time() - 0.1
+
 while True:
     startRenderTime = time.time()
+    from_last_frame = startRenderTime - last_render_time
+    last_render_time = startRenderTime
 
-    scene_render = scene.render(
-        round(width / 4),
-        round(height / config.HEIGHT_RATIO / 4)
+    scene_render = game_scene.render(
+        round(width / config.render_coefficient_axis),
+        round(height / config.height_ratio / config.render_coefficient_axis)
     )
-    d.rotate(Rotation3d(3, 3, 3))
+    process_scene(from_last_frame * 20, game_scene)
     matrix = resize_matrix(scene_render, height, width)
     h = []
     for y in range(len(matrix)):
