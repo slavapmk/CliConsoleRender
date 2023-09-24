@@ -1,6 +1,7 @@
 from functools import reduce
-import config
 from math import sin, cos, radians
+
+import config
 
 
 class Point3d:
@@ -15,6 +16,37 @@ class Point3d:
 
     def __str__(self):
         return f'({self.x},{self.y},{self.z})'
+
+    def rotate(self, rotation: 'Rotation3d', rotation_axis: 'Point3d') -> 'Point3d':
+        rads = list(map(radians, [rotation.x_axis, 0, rotation.z_axis]))
+        if rotation_axis == (0, 0, 0):
+            rotation_axis = Point3d(0, 0, 0)
+        x = self.x - rotation_axis.x
+        y = self.y - rotation_axis.y
+        z = self.z - rotation_axis.z
+        new_x = (
+                        x * cos(rads[1]) * cos(rads[2])
+                        - y * sin(rads[2]) * cos(rads[1])
+                        + z * sin(rads[1])
+                ) + rotation_axis.x
+        new_y = (
+                        x * (sin(rads[0]) * sin(rads[1]) * cos(rads[2]) + sin(rads[2]) * cos(rads[0]))
+                        + y * (- sin(rads[0]) * sin(rads[1]) * sin(rads[2]) + cos(rads[0]) * cos(rads[2]))
+                        + z * (-sin(rads[0]) * cos(rads[1]))
+                ) + rotation_axis.y
+        new_z = (
+                        x * (sin(rads[0]) * sin(rads[2]) - sin(rads[1]) * cos(rads[0]) * cos(rads[2]))
+                        + y * (sin(rads[0]) * cos(rads[2]) + sin(rads[1]) * sin(rads[2]) * cos(rads[0]))
+                        + z * cos(rads[0]) * cos(rads[1])
+                ) + rotation_axis.z
+        return Point3d(new_x, new_y, new_z)
+
+    def add(self, addition: 'Point3d'):
+        return Point3d(
+            self.x + addition.x,
+            self.y + addition.y,
+            self.z + addition.z
+        )
 
 
 class Rotation3d:
@@ -43,23 +75,8 @@ class Direction3d:
         return f'({self.x}, {self.y}, {self.z})'
 
     def rotate(self, rotation: Rotation3d) -> 'Direction3d':
-        rads = list(map(radians, [rotation.x_axis, 0, rotation.z_axis]))
-        new_x = (
-                self.x * cos(rads[1]) * cos(rads[2])
-                - self.y * sin(rads[2]) * cos(rads[1])
-                + self.z * sin(rads[1])
-        )
-        new_y = (
-                self.x * (sin(rads[0]) * sin(rads[1]) * cos(rads[2]) + sin(rads[2]) * cos(rads[0]))
-                + self.y * (- sin(rads[0]) * sin(rads[1]) * sin(rads[2]) + cos(rads[0]) * cos(rads[2]))
-                + self.z * (-sin(rads[0]) * cos(rads[1]))
-        )
-        new_z = (
-                self.x * (sin(rads[0]) * sin(rads[2]) - sin(rads[1]) * cos(rads[0]) * cos(rads[2]))
-                + self.y * (sin(rads[0]) * cos(rads[2]) + sin(rads[1]) * sin(rads[2]) * cos(rads[0]))
-                + self.z * cos(rads[0]) * cos(rads[1])
-        )
-        return Direction3d(new_x, new_y, new_z)
+        rotate = Point3d(self.x, self.y, self.z).rotate(rotation, Point3d(0, 0, 0))
+        return Direction3d(rotate.x, rotate.y, rotate.z)
 
 
 class Vector3d:
@@ -85,7 +102,7 @@ class Polygon3d:
 
 
 class Object3d:
-    center: Point3d
+    position: Point3d
     model: list[Polygon3d]
     rotation: Rotation3d
 
@@ -93,30 +110,25 @@ class Object3d:
         out = []
         for polygon in self.model:
             out.append(Polygon3d(
-                Point3d(
-                    polygon.a.x + self.center.x,
-                    polygon.a.y + self.center.y,
-                    polygon.a.z + self.center.z
-                ),
-                Point3d(
-                    polygon.b.x + self.center.x,
-                    polygon.b.y + self.center.y,
-                    polygon.b.z + self.center.z
-                ),
-                Point3d(
-                    polygon.c.x + self.center.x,
-                    polygon.c.y + self.center.y,
-                    polygon.c.z + self.center.z
-                )
+                polygon.a.rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
+                polygon.b.rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
+                polygon.c.rotate(self.rotation, Point3d(0, 0, 0)).add(self.position)
             ))
         return out
 
-class Cube3d(Object3d):
-    center: Point3d
-    model: list[Polygon3d]
+    def rotate(self, rotation: Rotation3d):
+        self.rotation.x_axis = (self.rotation.x_axis + rotation.x_axis) % 360
+        self.rotation.z_axis = (self.rotation.z_axis + rotation.z_axis) % 360
 
-    def __init__(self, center: Point3d, edge: float):
-        self.center = center
+
+class Cube3d(Object3d):
+    position: Point3d
+    model: list[Polygon3d]
+    rotation: Rotation3d
+
+    def __init__(self, position: Point3d, edge: float, rotation=Rotation3d(0, 0)):
+        self.position = position
+        self.rotation = rotation
         self.model = [
             Polygon3d(
                 Point3d(-0.5 * edge, -0.5 * edge, -0.5 * edge),
@@ -182,13 +194,13 @@ class Cube3d(Object3d):
 
 
 class Camera(Object3d):
-    center: Point3d
+    position: Point3d
     model: list[Polygon3d] = []
     rotation: Rotation3d
     fov: int = config.FOV
 
-    def __init__(self, center: Point3d, direction: Rotation3d):
-        self.center = center
+    def __init__(self, position: Point3d, direction: Rotation3d):
+        self.position = position
         self.rotation = direction
 
 
@@ -200,7 +212,8 @@ class Scene:
         self.camera = camera
         self.objects = list(objects)
 
-    def render(self, density: int):
+    def render(self, width: int, height: int):
+        density: int = max(width, height)
         polygons = [
             Polygon3d(
                 Point3d(-1, 15, -1),
@@ -211,11 +224,11 @@ class Scene:
         if len(self.objects) != 0:
             polygons = reduce(lambda a, b: a + b, map(lambda x: x.final_state(), self.objects))
         output = []
-        for yp in range(density):
+        for yp in range(height):
             row = []
-            for xp in range(density):
-                x_degrees = (xp - (density - 1) / 2) / (density - 1) * self.camera.fov
-                y_degrees = (yp - (density - 1) / 2) / (density - 1) * self.camera.fov
+            for xp in range(width):
+                x_degrees = (xp - (width - 1) / 2) / (density - 1) * self.camera.fov
+                y_degrees = (yp - (height - 1) / 2) / (density - 1) * self.camera.fov
 
                 direction = Direction3d(0, 1, 0).rotate(Rotation3d(
                     -(self.camera.rotation.x_axis + y_degrees),
@@ -225,7 +238,7 @@ class Scene:
                 for polygon in polygons:
                     intersection = intersect_triangle(
                         polygon,
-                        self.camera.center,
+                        self.camera.position,
                         direction
                     )
                     if intersection is not None:
