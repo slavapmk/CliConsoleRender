@@ -18,7 +18,7 @@ class Point3d:
         return f'({self.x},{self.y},{self.z})'
 
     def rotate(self, rotation: 'Rotation3d', rotation_axis: 'Point3d') -> 'Point3d':
-        rads = list(map(radians, [rotation.x_axis, 0, rotation.z_axis]))
+        rads = list(map(radians, [rotation.x_axis, rotation.y_axis, rotation.z_axis]))
         if rotation_axis == (0, 0, 0):
             rotation_axis = Point3d(0, 0, 0)
         x = self.x - rotation_axis.x
@@ -51,14 +51,16 @@ class Point3d:
 
 class Rotation3d:
     x_axis: float
+    y_axis: float
     z_axis: float
 
-    def __init__(self, x_axis, z_axis):
+    def __init__(self, x_axis, y_axis, z_axis):
         self.x_axis = x_axis
+        self.y_axis = y_axis
         self.z_axis = z_axis
 
     def __str__(self):
-        return f'({self.x_axis},{self.z_axis})'
+        return f'({self.x_axis},{self.y_axis},{self.z_axis})'
 
 
 class Direction3d:
@@ -84,7 +86,7 @@ class Vector3d:
     direction: Direction3d
     length: int
 
-    def __init__(self, point: Point3d, direction: Direction3d, length: int):
+    def __init__(self, point: Point3d, direction: Direction3d, length: int = 1):
         self.point = point
         self.direction = direction
         self.length = length
@@ -94,11 +96,16 @@ class Polygon3d:
     a: Point3d
     b: Point3d
     c: Point3d
+    v: float
 
-    def __init__(self, a: Point3d, b: Point3d, c: Point3d):
+    def __init__(self, a: Point3d, b: Point3d, c: Point3d, v: float = 0.0):
         self.a = a
         self.b = b
         self.c = c
+        self.v = v
+
+    def __str__(self):
+        return f'({self.a}, {self.b}, {self.c}, {self.v})'
 
 
 class Object3d:
@@ -112,7 +119,8 @@ class Object3d:
             out.append(Polygon3d(
                 polygon.a.rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
                 polygon.b.rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
-                polygon.c.rotate(self.rotation, Point3d(0, 0, 0)).add(self.position)
+                polygon.c.rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
+                polygon.v
             ))
         return out
 
@@ -126,7 +134,7 @@ class Cube3d(Object3d):
     model: list[Polygon3d]
     rotation: Rotation3d
 
-    def __init__(self, position: Point3d, edge: float, rotation=Rotation3d(0, 0)):
+    def __init__(self, position: Point3d, edge: float, rotation=Rotation3d(0, 0, 0)):
         self.position = position
         self.rotation = rotation
         self.model = [
@@ -134,61 +142,73 @@ class Cube3d(Object3d):
                 Point3d(-0.5 * edge, -0.5 * edge, -0.5 * edge),
                 Point3d(0.5 * edge, -0.5 * edge, -0.5 * edge),
                 Point3d(-0.5 * edge, 0.5 * edge, -0.5 * edge),
+                0.2
             ),
             Polygon3d(
                 Point3d(0.5 * edge, -0.5 * edge, -0.5 * edge),
                 Point3d(-0.5 * edge, 0.5 * edge, -0.5 * edge),
-                Point3d(0.5 * edge, 0.5 * edge, -0.5 * edge)
+                Point3d(0.5 * edge, 0.5 * edge, -0.5 * edge),
+                0.2
             ),
             Polygon3d(
                 Point3d(-0.5 * edge, -0.5 * edge, 0.5 * edge),
                 Point3d(0.5 * edge, -0.5 * edge, 0.5 * edge),
                 Point3d(-0.5 * edge, 0.5 * edge, 0.5 * edge),
+                0.21
             ),
             Polygon3d(
                 Point3d(0.5 * edge, -0.5 * edge, 0.5 * edge),
                 Point3d(-0.5 * edge, 0.5 * edge, 0.5 * edge),
-                Point3d(0.5 * edge, 0.5 * edge, 0.5 * edge)
+                Point3d(0.5 * edge, 0.5 * edge, 0.5 * edge),
+                0.21
             ),
             Polygon3d(
                 Point3d(-0.5 * edge, -0.5 * edge, -0.5 * edge),
                 Point3d(-0.5 * edge, -0.5 * edge, 0.5 * edge),
-                Point3d(-0.5 * edge, 0.5 * edge, 0.5 * edge)
+                Point3d(-0.5 * edge, 0.5 * edge, 0.5 * edge),
+                0.22
             ),
             Polygon3d(
                 Point3d(-0.5 * edge, -0.5 * edge, -0.5 * edge),
                 Point3d(-0.5 * edge, 0.5 * edge, 0.5 * edge),
-                Point3d(-0.5 * edge, 0.5 * edge, -0.5 * edge)
+                Point3d(-0.5 * edge, 0.5 * edge, -0.5 * edge),
+                0.22
             ),
             Polygon3d(
                 Point3d(0.5 * edge, -0.5 * edge, -0.5 * edge),
                 Point3d(0.5 * edge, -0.5 * edge, 0.5 * edge),
-                Point3d(0.5 * edge, 0.5 * edge, 0.5 * edge)
+                Point3d(0.5 * edge, 0.5 * edge, 0.5 * edge),
+                0.23
             ),
             Polygon3d(
                 Point3d(0.5 * edge, -0.5 * edge, -0.5 * edge),
                 Point3d(0.5 * edge, 0.5 * edge, 0.5 * edge),
-                Point3d(0.5 * edge, 0.5 * edge, -0.5 * edge)
+                Point3d(0.5 * edge, 0.5 * edge, -0.5 * edge),
+                0.23
             ),
             Polygon3d(
                 Point3d(-0.5 * edge, 0.5 * edge, -0.5 * edge),
                 Point3d(-0.5 * edge, 0.5 * edge, 0.5 * edge),
-                Point3d(0.5 * edge, 0.5 * edge, 0.5 * edge)
+                Point3d(0.5 * edge, 0.5 * edge, 0.5 * edge),
+                0.24
             ),
             Polygon3d(
                 Point3d(-0.5 * edge, 0.5 * edge, -0.5 * edge),
                 Point3d(0.5 * edge, 0.5 * edge, 0.5 * edge),
-                Point3d(0.5 * edge, 0.5 * edge, -0.5 * edge)
+                Point3d(0.5 * edge, 0.5 * edge, -0.5 * edge),
+                0.24
             ),
             Polygon3d(
                 Point3d(-0.5 * edge, -0.5 * edge, -0.5 * edge),
                 Point3d(-0.5 * edge, -0.5 * edge, 0.5 * edge),
-                Point3d(0.5 * edge, -0.5 * edge, 0.5 * edge)
+                Point3d(0.5 * edge, -0.5 * edge, 0.5 * edge),
+                0.25
             ),
             Polygon3d(
                 Point3d(-0.5 * edge, -0.5 * edge, -0.5 * edge),
                 Point3d(0.5 * edge, -0.5 * edge, 0.5 * edge),
-                Point3d(0.5 * edge, -0.5 * edge, -0.5 * edge)
+                Point3d(0.5 * edge, -0.5 * edge, -0.5 * edge),
+                0.25
             )
         ]
 
@@ -222,7 +242,7 @@ class Scene:
             )
         ]
         if len(self.objects) != 0:
-            polygons = reduce(lambda a, b: a + b, map(lambda x: x.final_state(), self.objects))
+            polygons = reduce(sum, map(lambda x: x.final_state(), self.objects))
         output = []
         for yp in range(height):
             row = []
@@ -232,19 +252,18 @@ class Scene:
 
                 direction = Direction3d(0, 1, 0).rotate(Rotation3d(
                     -(self.camera.rotation.x_axis + y_degrees),
+                    0,
                     -(self.camera.rotation.z_axis + x_degrees),
                 ))
-                a = 0
-                for polygon in polygons:
-                    intersection = intersect_triangle(
-                        polygon,
-                        self.camera.position,
-                        direction
-                    )
-                    if intersection is not None:
-                        a = 1
-                        break
-                row.append(a)
+                point, polygon = intersect_polygons(
+                    Vector3d(self.camera.position, direction),
+                    polygons
+                )
+                if point is not None:
+                    row.append(polygon.v)
+                else:
+                    row.append(0)
+                # print(polygon)
             output.append(row)
         return output
 
@@ -294,3 +313,25 @@ def intersect_triangle(polygon: Polygon3d, ray_origin: Point3d, ray_direction: D
         return intersect
     else:
         return None
+
+
+def intersect_polygons(ray: Vector3d, polygons: list[Polygon3d]) -> (Point3d | None, Polygon3d | None):
+    closest_intersection = None
+    closest_polygon = None
+    closest_distance = None
+
+    for polygon in polygons:
+        intersection = intersect_triangle(polygon, ray.point, ray.direction)
+        if intersection:
+            distance = (intersection.x - ray.point.x) ** 2 + (intersection.y - ray.point.y) ** 2 + (
+                    intersection.z - ray.point.z) ** 2
+
+            if closest_intersection is None or distance < closest_distance:
+                closest_intersection = intersection
+                closest_polygon = polygon
+                closest_distance = distance
+
+    if closest_intersection:
+        return closest_intersection, closest_polygon
+    else:
+        return None, None

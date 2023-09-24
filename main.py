@@ -1,44 +1,66 @@
-import random
 import shutil
 import time
 
 import config
 from config import MAX_FPS
-from screen import Screen
+from object3d import Cube3d, Point3d, Scene, Camera, Rotation3d
 
-all_fps = []
+
+def resize_matrix(to_resize, new_height, new_width):
+    original_height, original_width = len(to_resize), len(to_resize[0])
+    resized_matrix = [[0.0] * new_width for _ in range(new_height)]
+    for i in range(new_height):
+        for j in range(new_width):
+            x = int((i * (original_height - 1)) / (new_height - 1))
+            y = int((j * (original_width - 1)) / (new_width - 1))
+            a = (i * (original_height - 1)) / (new_height - 1) - x
+            b = (j * (original_width - 1)) / (new_width - 1) - y
+            resized_matrix[i][j] = (1 - a) * (1 - b) * to_resize[x][y]
+            resized_matrix[i][j] += a * (1 - b) * to_resize[x + 1][y] if x + 1 < original_height else 0.0
+            resized_matrix[i][j] += (1 - a) * b * to_resize[x][y + 1] if y + 1 < original_width else 0.0
+            resized_matrix[i][j] += a * b * to_resize[x + 1][
+                y + 1] if x + 1 < original_height and y + 1 < original_width else 0.0
+    return resized_matrix
+
+
+gradient: str = ('ÆÑÊŒØMÉËÈÃÂWQBÅæ#NÁþEÄÀHKRŽœXgÐêqÛŠÕÔA€ßpmãâG¶øðé8ÚÜ$ëdÙýèÓÞÖåÿÒb¥FDñá'
+                 'ZPäšÇàhû§ÝkŸ®S9žUTe6µOyxÎ¾f4õ5ôú&aü™2ùçw©Y£0VÍL±3ÏÌóC@nöòs¢u‰½¼‡zJƒ%¤It'
+                 'ocîrjv1lí=ïì<>i7†[¿?×}*{+()\\/»«•¬|!¡÷¦¯—^ª„”“~³º²–°¹‹›;:’‘‚’˜ˆ¸…·¨´` ')
+
+
+def parse_pixel(pixel: float):
+    return gradient[round((len(gradient) - 1) * (1 - pixel))]
+
+
+last_fps_values = []
+
+d = Cube3d(Point3d(0, 3, 0), 1)
+scene = Scene(
+    Camera(
+        Point3d(0, 0, 0),
+        Rotation3d(0, 0, 0)
+    ),
+    d
+)
+
+width, height = shutil.get_terminal_size()
+width -= 1
 while True:
     startRenderTime = time.time()
 
-    (width, height) = shutil.get_terminal_size()
-    screen = Screen(width - 1, height)
-
-    screen.fill(
-        -1, -1,
-        1, 1,
-        0.1
+    scene_render = scene.render(
+        round(width / 4),
+        round(height / config.HEIGHT_RATIO / 4)
     )
-    screen.fill(
-        -0.3, -0.3,
-        0.3, 0.3,
-        random.randrange(30, 80) / 100
-    )
-    screen.fill(
-        -0.29, -0.29,
-        -0.31, -0.31,
-        0.9
-    )
-    screen.fill(
-        -0.01, -0.29,
-        0.01, -0.31,
-        0.9
-    )
-    screen.fill(
-        -0.29, -0.01,
-        -0.31, 0.01,
-        0.9
-    )
-    render = screen.render()
+    d.rotate(Rotation3d(3, 3, 3))
+    matrix = resize_matrix(scene_render, height, width)
+    h = []
+    for y in range(len(matrix)):
+        row = []
+        for x in range(len(matrix[0])):
+            row.append(parse_pixel(matrix[y][x]))
+        h.append(''.join(row))
+    render = '\n'.join(h)
 
     renderDuration = time.time() - startRenderTime
     if config.MAX_FPS > 0:
@@ -50,10 +72,10 @@ while True:
         elapsed_time = (time.time() - startRenderTime)
         if elapsed_time != 0:
             fps = round(1 / elapsed_time)
-            all_fps.append(fps)
-            if len(all_fps) > 30:
-                all_fps.pop(0)
-            average_fps = f' FPS: {round(sum(all_fps) / len(all_fps))} '
+            last_fps_values.append(fps)
+            if len(last_fps_values) > 30:
+                last_fps_values.pop(0)
+            average_fps = f' FPS: {round(sum(last_fps_values) / len(last_fps_values))} '
             render = average_fps + render[len(average_fps):]
 
     print('\n' + render, end='')
