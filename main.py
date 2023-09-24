@@ -23,13 +23,8 @@ def resize_matrix(to_resize, new_height, new_width):
     return resized_matrix
 
 
-gradient: str = ('ÆÑÊŒØMÉËÈÃÂWQBÅæ#NÁþEÄÀHKRŽœXgÐêqÛŠÕÔA€ßpmãâG¶øðé8ÚÜ$ëdÙýèÓÞÖåÿÒb¥FDñá'
-                 'ZPäšÇàhû§ÝkŸ®S9žUTe6µOyxÎ¾f4õ5ôú&aü™2ùçw©Y£0VÍL±3ÏÌóC@nöòs¢u‰½¼‡zJƒ%¤It'
-                 'ocîrjv1lí=ïì<>i7†[¿?×}*{+()\\/»«•¬|!¡÷¦¯—^ª„”“~³º²–°¹‹›;:’‘‚’˜ˆ¸…·¨´` ')
-
-
 def parse_pixel(pixel: float):
-    return gradient[round((len(gradient) - 1) * (1 - pixel))]
+    return config.GRADIENT[round((len(config.GRADIENT) - 1) * (1 - pixel))]
 
 
 def process_scene(ticks: float, scene: Scene):
@@ -38,55 +33,60 @@ def process_scene(ticks: float, scene: Scene):
     ))
 
 
-last_fps_values = []
+def run():
+    last_fps_values = []
 
-d = Cube3d(Point3d(0, 3, 0), 1)
-game_scene = Scene(
-    Camera(
-        Point3d(0, 0, 0),
-        Rotation3d(0, 0, 0)
-    ),
-    d
-)
-
-width, height = shutil.get_terminal_size()
-width -= 1
-
-last_render_time = time.time() - 0.1
-
-while True:
-    startRenderTime = time.time()
-    from_last_frame = startRenderTime - last_render_time
-    last_render_time = startRenderTime
-
-    scene_render = game_scene.render(
-        round(width / config.render_coefficient_axis),
-        round(height / config.height_ratio / config.render_coefficient_axis)
+    d = Cube3d(Point3d(0, 3, 0), 1)
+    game_scene = Scene(
+        Camera(
+            Point3d(0, 0, 0),
+            Rotation3d(0, 0, 0)
+        ),
+        d
     )
-    process_scene(from_last_frame * 20, game_scene)
-    matrix = resize_matrix(scene_render, height, width)
-    h = []
-    for y in range(len(matrix)):
-        row = []
-        for x in range(len(matrix[0])):
-            row.append(parse_pixel(matrix[y][x]))
-        h.append(''.join(row))
-    render = '\n'.join(h)
 
-    renderDuration = time.time() - startRenderTime
-    if config.MAX_FPS > 0:
-        delayTime = (1 / MAX_FPS) - renderDuration
-        if delayTime > 0:
-            time.sleep(delayTime)
+    width, height = shutil.get_terminal_size()
+    width -= 1
 
-    if config.SHOW_FPS:
-        elapsed_time = (time.time() - startRenderTime)
-        if elapsed_time != 0:
-            fps = round(1 / elapsed_time)
-            last_fps_values.append(fps)
-            if len(last_fps_values) > 30:
-                last_fps_values.pop(0)
-            average_fps = f' FPS: {round(sum(last_fps_values) / len(last_fps_values))} '
-            render = average_fps + render[len(average_fps):]
+    last_render_time = time.time() - 0.1
 
-    print('\n' + render, end='')
+    while True:
+        start_render_time = time.time()
+        from_last_frame = start_render_time - last_render_time
+        last_render_time = start_render_time
+
+        scene_render = game_scene.render(
+            round(width / config.render_coefficient_axis),
+            round(height / config.height_ratio / config.render_coefficient_axis)
+        )
+        process_scene(from_last_frame * 20, game_scene)
+        matrix = resize_matrix(scene_render, height, width)
+        h = []
+        for y in range(len(matrix)):
+            row = []
+            for x in range(len(matrix[0])):
+                row.append(parse_pixel(matrix[y][x]))
+            h.append(''.join(row))
+        render = '\n'.join(h)
+
+        render_duration = time.time() - start_render_time
+        if config.MAX_FPS > 0:
+            delay_time = (1 / MAX_FPS) - render_duration
+            if delay_time > 0:
+                time.sleep(delay_time)
+
+        if config.SHOW_FPS:
+            elapsed_time = (time.time() - start_render_time)
+            if elapsed_time != 0:
+                fps = round(1 / elapsed_time)
+                last_fps_values.append(fps)
+                if len(last_fps_values) > 30:
+                    last_fps_values.pop(0)
+                average_fps = f' FPS: {round(sum(last_fps_values) / len(last_fps_values))} '
+                render = average_fps + render[len(average_fps):]
+
+        print('\n' + render, end='')
+
+
+if __name__ == '__main__':
+    run()
