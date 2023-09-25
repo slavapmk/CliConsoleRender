@@ -3,7 +3,7 @@ import time
 
 import config
 from config import MAX_FPS
-from render import Cube3d, Point3d, Scene, Camera, Rotation3d
+from render import Cube3d, Point3d, Scene, Camera, Rotation3d, Scale3d
 
 
 def resize_matrix(to_resize, new_height, new_width):
@@ -27,10 +27,27 @@ def parse_pixel(pixel: float):
     return config.GRADIENT[round((len(config.GRADIENT) - 1) * (1 - pixel))]
 
 
+# vefd: float = 1
+ii: bool = True
+ga = 1.0
+
+
 def process_scene(ticks: float, scene: Scene):
-    scene.objects[0].rotate(Rotation3d(
-        ticks / 4, 0, ticks / 4
-    ))
+    global ii, ga
+    if ga > 1.5:
+        ii = False
+    elif ga < 1:
+        ii = True
+    if ii:
+        ga += ticks*0.01
+    else:
+        ga -= ticks*0.01
+    scene.objects[0].scale = Scale3d(ga, ga, ga)
+    scene.objects[0].rotate(
+        Rotation3d(
+            ticks, ticks, ticks
+        )
+    )
 
 
 def run():
@@ -41,8 +58,7 @@ def run():
             Point3d(0, 0, 0),
             Rotation3d(0, 0, 0)
         ),
-        Cube3d(Point3d(0.5, 3, 0), 0.5),
-        Cube3d(Point3d(-0.5, 3, 0), 0.5),
+        Cube3d(Point3d(0, 3, 0), 0.6),
     )
 
     width, height = shutil.get_terminal_size()

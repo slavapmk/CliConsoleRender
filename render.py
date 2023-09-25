@@ -3,6 +3,18 @@ from math import sin, cos, radians
 import config
 
 
+class Scale3d:
+    x: float
+    y: float
+    z: float
+
+    def __init__(self, x, y, z):
+        super().__init__()
+        self.x = x
+        self.y = y
+        self.z = z
+
+
 class Point3d:
     x: float
     y: float
@@ -46,6 +58,13 @@ class Point3d:
             self.x + addition.x,
             self.y + addition.y,
             self.z + addition.z
+        )
+
+    def multiply(self, scale: 'Scale3d'):
+        return Point3d(
+            self.x * scale.x,
+            self.y * scale.y,
+            self.z * scale.z
         )
 
 
@@ -141,21 +160,23 @@ class Renderable3d(Object3d):
     position: Point3d
     rotation: Rotation3d
     model: list[Polygon3d]
+    scale: Scale3d
 
     def __str__(self):
         return f"{self.position}, {self.rotation}, {self.model}"
 
-    def __init__(self, position, rotation, model):
+    def __init__(self, position, rotation, model, scale: Scale3d = None):
         super().__init__(position, rotation)
         self.model = model
+        self.scale = Scale3d(1, 1, 1) if scale is None else scale
 
     def final_state(self) -> list[Polygon3d]:
         out = []
         for polygon in self.model:
             out.append(Polygon3d(
-                polygon.a.rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
-                polygon.b.rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
-                polygon.c.rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
+                polygon.a.multiply(self.scale).rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
+                polygon.b.multiply(self.scale).rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
+                polygon.c.multiply(self.scale).rotate(self.rotation, Point3d(0, 0, 0)).add(self.position),
                 polygon.v
             ))
         return out
