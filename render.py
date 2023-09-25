@@ -1,4 +1,3 @@
-from functools import reduce
 from math import sin, cos, radians
 
 import config
@@ -10,6 +9,7 @@ class Point3d:
     z: float
 
     def __init__(self, x, y, z):
+        super().__init__()
         self.x = x
         self.y = y
         self.z = z
@@ -55,12 +55,18 @@ class Rotation3d:
     z_axis: float
 
     def __init__(self, x_axis, y_axis, z_axis):
+        super().__init__()
         self.x_axis = x_axis
         self.y_axis = y_axis
         self.z_axis = z_axis
 
     def __str__(self):
         return f'({self.x_axis},{self.y_axis},{self.z_axis})'
+
+    def add(self, addition: 'Rotation3d'):
+        self.x_axis = (self.x_axis + addition.x_axis) % 360
+        self.y_axis = (self.y_axis + addition.y_axis) % 360
+        self.z_axis = (self.z_axis + addition.z_axis) % 360
 
 
 class Direction3d:
@@ -69,6 +75,7 @@ class Direction3d:
     z: float
 
     def __init__(self, x, y, z):
+        super().__init__()
         self.x = x
         self.y = y
         self.z = z
@@ -87,6 +94,7 @@ class Vector3d:
     length: int
 
     def __init__(self, point: Point3d, direction: Direction3d, length: int = 1):
+        super().__init__()
         self.point = point
         self.direction = direction
         self.length = length
@@ -99,6 +107,7 @@ class Polygon3d:
     v: float
 
     def __init__(self, a: Point3d, b: Point3d, c: Point3d, v: float = 0.0):
+        super().__init__()
         self.a = a
         self.b = b
         self.c = c
@@ -110,8 +119,35 @@ class Polygon3d:
 
 class Object3d:
     position: Point3d
-    model: list[Polygon3d]
     rotation: Rotation3d
+
+    def __init__(self, position, rotation):
+        super().__init__()
+        self.position = position
+        self.rotation = rotation
+
+
+class Light3d(Object3d):
+    position: Point3d
+    rotation: Rotation3d
+
+    def __init__(self, position, rotation):
+        super().__init__(position, rotation)
+        self.position = position
+        self.rotation = rotation
+
+
+class Renderable3d(Object3d):
+    position: Point3d
+    rotation: Rotation3d
+    model: list[Polygon3d]
+
+    def __str__(self):
+        return f"{self.position}, {self.rotation}, {self.model}"
+
+    def __init__(self, position, rotation, model):
+        super().__init__(position, rotation)
+        self.model = model
 
     def final_state(self) -> list[Polygon3d]:
         out = []
@@ -125,19 +161,18 @@ class Object3d:
         return out
 
     def rotate(self, rotation: Rotation3d):
-        self.rotation.x_axis = (self.rotation.x_axis + rotation.x_axis) % 360
-        self.rotation.z_axis = (self.rotation.z_axis + rotation.z_axis) % 360
+        self.rotation.add(rotation)
 
 
-class Cube3d(Object3d):
+class Cube3d(Renderable3d):
     position: Point3d
     model: list[Polygon3d]
     rotation: Rotation3d
 
-    def __init__(self, position: Point3d, edge: float, rotation=Rotation3d(0, 0, 0)):
-        self.position = position
-        self.rotation = rotation
-        self.model = [
+    def __init__(self, position: Point3d, edge: float, rotation=None):
+        if rotation is None:
+            rotation = Rotation3d(0, 0, 0)
+        model = [
             Polygon3d(
                 Point3d(-0.5 * edge, -0.5 * edge, -0.5 * edge),
                 Point3d(0.5 * edge, -0.5 * edge, -0.5 * edge),
@@ -211,38 +246,34 @@ class Cube3d(Object3d):
                 0.25
             )
         ]
+        super().__init__(position, rotation, model)
 
 
 class Camera(Object3d):
     position: Point3d
-    model: list[Polygon3d] = []
     rotation: Rotation3d
     fov: int = config.FOV
 
-    def __init__(self, position: Point3d, direction: Rotation3d):
-        self.position = position
-        self.rotation = direction
+    def __init__(self, position: Point3d, rotation: Rotation3d, fov: int = config.FOV):
+        super().__init__(position, rotation)
+        self.fov = fov
 
 
 class Scene:
-    objects: list[Object3d] = []
+    objects: list[Renderable3d] = []
     camera: Camera
 
-    def __init__(self, camera: Camera, *objects: Object3d):
+    def __init__(self, camera: Camera, *objects: Renderable3d):
+        super().__init__()
         self.camera = camera
         self.objects = list(objects)
 
     def render(self, width: int, height: int):
         density: int = max(width, height)
-        polygons = [
-            Polygon3d(
-                Point3d(-1, 15, -1),
-                Point3d(1, 15, -1),
-                Point3d(0, 15, 1)
-            )
-        ]
+        polygons = []
         if len(self.objects) != 0:
-            polygons = reduce(sum, map(lambda x: x.final_state(), self.objects))
+            for model in map(lambda x: x.final_state(), self.objects):
+                polygons += model
         output = []
         for yp in range(height):
             row = []
@@ -263,7 +294,6 @@ class Scene:
                     row.append(polygon.v)
                 else:
                     row.append(0)
-                # print(polygon)
             output.append(row)
         return output
 

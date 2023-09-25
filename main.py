@@ -3,7 +3,7 @@ import time
 
 import config
 from config import MAX_FPS
-from object3d import Cube3d, Point3d, Scene, Camera, Rotation3d
+from render import Cube3d, Point3d, Scene, Camera, Rotation3d
 
 
 def resize_matrix(to_resize, new_height, new_width):
@@ -29,54 +29,56 @@ def parse_pixel(pixel: float):
 
 def process_scene(ticks: float, scene: Scene):
     scene.objects[0].rotate(Rotation3d(
-        ticks, ticks, ticks
+        ticks / 4, 0, ticks / 4
     ))
 
 
 def run():
     last_fps_values = []
 
-    d = Cube3d(Point3d(0, 3, 0), 1)
     game_scene = Scene(
         Camera(
             Point3d(0, 0, 0),
             Rotation3d(0, 0, 0)
         ),
-        d
+        Cube3d(Point3d(0.5, 3, 0), 0.5),
+        Cube3d(Point3d(-0.5, 3, 0), 0.5),
     )
 
     width, height = shutil.get_terminal_size()
     width -= 1
 
-    last_render_time = time.time() - 0.1
-
+    previous_frame_start = time.time()
     while True:
-        start_render_time = time.time()
-        from_last_frame = start_render_time - last_render_time
-        last_render_time = start_render_time
+        frame_start = time.time()
+        ticks = (frame_start - previous_frame_start) * 20
+        previous_frame_start = frame_start
+        if ticks != 0:
+            process_scene(ticks, game_scene)
 
-        scene_render = game_scene.render(
-            round(width / config.render_coefficient_axis),
-            round(height / config.height_ratio / config.render_coefficient_axis)
+        screen = resize_matrix(
+            game_scene.render(
+                round(width / config.render_coefficient_axis),
+                round(height / config.height_ratio / config.render_coefficient_axis)
+            ),
+            height, width
         )
-        process_scene(from_last_frame * 20, game_scene)
-        matrix = resize_matrix(scene_render, height, width)
         h = []
-        for y in range(len(matrix)):
+        for y in range(len(screen)):
             row = []
-            for x in range(len(matrix[0])):
-                row.append(parse_pixel(matrix[y][x]))
+            for x in range(len(screen[0])):
+                row.append(parse_pixel(screen[y][x]))
             h.append(''.join(row))
         render = '\n'.join(h)
 
-        render_duration = time.time() - start_render_time
+        render_duration = time.time() - frame_start
         if config.MAX_FPS > 0:
             delay_time = (1 / MAX_FPS) - render_duration
             if delay_time > 0:
                 time.sleep(delay_time)
 
         if config.SHOW_FPS:
-            elapsed_time = (time.time() - start_render_time)
+            elapsed_time = (time.time() - frame_start)
             if elapsed_time != 0:
                 fps = round(1 / elapsed_time)
                 last_fps_values.append(fps)
